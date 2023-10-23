@@ -1,8 +1,15 @@
 #!/bin/bash
 
+# Check if jq is installed
+if ! command -v jq &> /dev/null
+then
+    echo "jq could not be found. Please install jq before running this script."
+    exit
+fi
+
 # check if there are any arguments
 if [ $# -eq 0 ]
-  then
+then
     echo "No arguments supplied"
     exit 1
 fi
@@ -14,13 +21,8 @@ separator () {
 
 # Initiate a game and save the game ID in a file.
 init () {
-  # call api
   GAME_ID=$(curl -s http://localhost:1337/ | jq -r '.gameid')
-
-  # save game id in file
   echo "${GAME_ID}" > gameID.txt
-
-  # print information
   separator
   echo "Game has been initialized. The game has the following id:"
   echo "${GAME_ID}"
@@ -28,22 +30,15 @@ init () {
 
 # Show which maps are available to choose from.
 maps () {
-  # call api
   MAPS=$(curl -s http://localhost:1337/map | jq -r '.[]')
-
-  # print information
   separator
   echo "Following maps are available: "
-
-  # cycle in maps
   I=1
-
   for MAP in $MAPS
   do
     echo "$I $MAP"
     I=$((I + 1))
   done
-
   echo "Use ./mazerunner.bash select # to select a map"
 }
 
