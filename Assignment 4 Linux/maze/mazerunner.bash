@@ -21,12 +21,29 @@ separator () {
 
 # Initiate a game and save the game ID in a file.
 init () {
-  GAME_ID=$(curl -s http://localhost:1337/ | jq -r '.gameid')
+  RESPONSE=$(curl -s http://localhost:1337/)
+  if [ -z "$RESPONSE" ]; then
+    echo "Failed to get a response from the server."
+    return
+  fi
+  
+  GAME_ID=$(echo "$RESPONSE" | jq -r '.gameid')
+  if [ -z "$GAME_ID" ]; then
+    echo "Failed to extract game ID from the server's response."
+    return
+  fi
+  
   echo "${GAME_ID}" > gameID.txt
+  if [ $? -ne 0 ]; then
+    echo "Failed to write game ID to gameID.txt."
+    return
+  fi
+  
   separator
   echo "Game has been initialized. The game has the following id:"
   echo "${GAME_ID}"
 }
+
 
 # Show which maps are available to choose from.
 maps () {
