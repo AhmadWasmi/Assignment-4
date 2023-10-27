@@ -23,6 +23,11 @@ fi
 
 # Initiate a game and save the game ID in a file.
 init () {
+  # Start the server in the background
+  node index.js &
+  # Wait for a couple of seconds to ensure the server has started
+  sleep 2
+
   RESPONSE=$(curl -s http://localhost:1337/)
   if [ -z "$RESPONSE" ]; then
     echo "Failed to get a response from the server."
@@ -44,6 +49,7 @@ init () {
   echo "Game has been initialized. The game has the following ID:"
   echo "${GAME_ID}"
 }
+
 
 # Show which maps are available to choose from.
 maps () {
