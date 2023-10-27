@@ -23,11 +23,6 @@ fi
 
 # Initiate a game and save the game ID in a file.
 init () {
-  # Start the server in the background
-  node index.js &
-  # Wait for a couple of seconds to ensure the server has started
-  sleep 2
-
   RESPONSE=$(curl -s http://localhost:1337/)
   if [ -z "$RESPONSE" ]; then
     echo "Failed to get a response from the server."
@@ -77,7 +72,7 @@ select_ () {
     fi
     I=$((I + 1))
   done
-  curl -s "http://localhost:1337/${GAME_ID}/map/{$MAP}"
+  curl -s "http://localhost:1337/${GAME_ID}/map/{$MAP}" > /dev/null  # Suppress the output here
   echo "Following map has been selected:"
   echo "Use ./mazerunner.bash enter to start the game and play manually"
 }
@@ -298,3 +293,5 @@ case $1 in
     echo "Bad command"
     ;;
 esac
+
+
