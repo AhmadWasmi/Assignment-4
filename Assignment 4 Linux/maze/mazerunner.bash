@@ -133,139 +133,74 @@ go () {
   info
 }
 
-# Automatically solve a map
-auto () {
-  # $1 = map number
+# Automatically solve each map
+auto() {
 
-  # automatically start map
-  init
-  maps
-  select_ "$1"
-  enter
-  # create last move variable
-  LAST_MOVE="east"
+  # Get the list of available maps
+  MAPS=$(curl -s http://localhost:1337/map | jq -r '.[]')
+  MAP_COUNT=$(echo "$MAPS" | wc -l)
 
-  # try solve in max 100 moves (to prevent cycling out) using right hand maze solving algorithm
-  for I in {0..99}
-  do
-    # get info, directions, and check if we are not done
-    info
-    DIRECTIONS=$(cat directions.txt)
-    read -r DONE < done.txt
+  # Solve each map
+  for ((i=1; i<=MAP_COUNT; i++)); do
+    echo "Solving map $i of $MAP_COUNT"
+    
+    # start map
+    init
+    select_ "$i"
+    enter
 
-    # if done break for cycle
-    if [[ "$DONE" == "done" ]]
-      then
-        break
-    fi
-
-    # parse where we can go
-    EAST=$(echo "$DIRECTIONS" | jq -r '.east')
-    SOUTH=$(echo "$DIRECTIONS" | jq -r '.south')
-    WEST=$(echo "$DIRECTIONS" | jq -r '.west')
-    NORTH=$(echo "$DIRECTIONS" | jq -r '.north')
-
-    # use right-hand rule algorithm to choose another move, and save it to LAST_MOVE variable
-    # when we do possible move, continue for cycle
-    case "$LAST_MOVE" in
-      east)
-        if [[ "$SOUTH" != "-" ]]
-        then
-          go "south"
-          LAST_MOVE="south"
-          continue
-        fi
-
-        if [[ "$EAST" != "-" ]]
-        then
-          go "east"
-          LAST_MOVE="east"
-          continue
-        fi
-
-        if [[ "$NORTH" != "-" ]]
-        then
-          go "north"
-          LAST_MOVE="north"
-          continue
-        fi
-        ;;
-
-      south)
-        if [[ "$WEST" != "-" ]]
-        then
-          go "west"
-          LAST_MOVE="west"
-          continue
-        fi
-
-        if [[ "$SOUTH" != "-" ]]
-        then
-          go "south"
-          LAST_MOVE="south"
-          continue
-        fi
-
-        if [[ "$EAST" != "-" ]]
-        then
-          go "east"
-          LAST_MOVE="east"
-          continue
-        fi
-        ;;
-
-      west)
-        if [[ "$NORTH" != "-" ]]
-        then
-          go "north"
-          LAST_MOVE="north"
-          continue
-        fi
-
-        if [[ "$WEST" != "-" ]]
-        then
-          go "west"
-          LAST_MOVE="west"
-          continue
-        fi
-
-        if [[ "$SOUTH" != "-" ]]
-        then
-          go "south"
-          LAST_MOVE="south"
-          continue
-        fi
-        ;;
-
-      north)
-        if [[ "$EAST" != "-" ]]
-        then
-          go "east"
-          LAST_MOVE="east"
-          continue
-        fi
-
-        if [[ "$NORTH" != "-" ]]
-        then
-          go "north"
-          LAST_MOVE="north"
-          continue
-        fi
-
-        if [[ "$WEST" != "-" ]]
-        then
-          go "west"
-          LAST_MOVE="west"
-          continue
-        fi
-        ;;
-    esac
-
-    # if we didn't go yet, we go east
-    go "east"
+    # create last move variable
     LAST_MOVE="east"
+
+    # try solve in max 100 moves (to prevent cycling out) using right hand maze solving algorithm
+    for I in {0..99}; do
+      # get info, directions, and check if we are not done
+      ROOM=$(curl -s "http://localhost:1337/${GAME_ID}/maze/${ROOM_ID}")
+
+      # Check if "You found the exit" is in the response
+      if echo "$ROOM" | grep -q "You found the exit"; then
+        echo "Game finished for map $i!"
+        break
+      fi
+
+      DIRECTIONS=$(echo "$ROOM" | jq -r '.directions')
+      EAST=$(echo "$DIRECTIONS" | jq -r '.east')
+      SOUTH=$(echo "$DIRECTIONS" | jq -r '.south')
+      WEST=$(echo "$DIRECTIONS" | jq -r '.west')
+      NORTH=$(echo "$DIRECTIONS" | jq -r '.north')
+
+      # use right-hand rule algorithm to choose another move, and save it to LAST_MOVE variable
+      case "$LAST_MOVE" in
+        east)
+          [[ "$SOUTH" != "-" ]] && { go "south"; LAST_MOVE="south"; continue; }
+          [[ "$EAST" != "-" ]] && { go "east"; LAST_MOVE="east"; continue; }
+          [[ "$NORTH" != "-" ]] && { go "north"; LAST_MOVE="north"; continue; }
+          ;;
+        south)
+          [[ "$WEST" != "-" ]] && { go "west"; LAST_MOVE="west"; continue; }
+          [[ "$SOUTH" != "-" ]] && { go "south"; LAST_MOVE="south"; continue; }
+          [[ "$EAST" != "-" ]] && { go "east"; LAST_MOVE="east"; continue; }
+          ;;
+        west)
+          [[ "$NORTH" != "-" ]] && { go "north"; LAST_MOVE="north"; continue; }
+          [[ "$WEST" != "-" ]] && { go "west"; LAST_MOVE="west"; continue; }
+          [[ "$SOUTH" != "-" ]] && { go "south"; LAST_MOVE="south"; continue; }
+          ;;
+        north)
+          [[ "$EAST" != "-" ]] && { go "east"; LAST_MOVE="east"; continue; }
+          [[ "$NORTH" != "-" ]] && { go "north"; LAST_MOVE="north"; continue; }
+          [[ "$WEST" != "-" ]] && { go "west"; LAST_MOVE="west"; continue; }
+          ;;
+      esac
+
+      # default move if none of the directions from the right-hand rule can be taken
+      go "east"
+      LAST_MOVE="east"
+    done
+
   done
 }
+
 
 # main command switch
 case $1 in
