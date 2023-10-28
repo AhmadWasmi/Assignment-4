@@ -74,6 +74,7 @@ select_ () {
   done
   curl -s "http://localhost:1337/${GAME_ID}/map/{$MAP}" > /dev/null  # Suppress the output here
   echo "Following map has been selected:"
+  echo "$MAP"
   echo "Use ./mazerunner.bash enter to start the game and play manually"
 }
 
